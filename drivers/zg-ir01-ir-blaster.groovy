@@ -1,5 +1,5 @@
 /**
- * Tuya ZG-IR01 Zigbee IR Blaster -- Hubitat driver
+ * Tuya ZG-IR01 Zigbee IR Blaster (battery model) -- Hubitat driver
  *
  * Copyright (c) Sean Anastasi <sean@anasta.si>
  * Copyright (c) 2026 John Sevinsky
@@ -100,7 +100,7 @@ import java.util.concurrent.ConcurrentHashMap
 // I'm not sure what's necessary to make this syntax work in standard Groovy
 // BEGIN METADATA
 metadata {
-    definition (name: "Tuya ZG-IR01 Zigbee IR Blaster",
+    definition (name: "Tuya ZG-IR01 Zigbee IR Blaster (Battery)",
                 namespace: "jon7sky",
                 author: "John Sevinsky",
                 importUrl: "https://raw.githubusercontent.com/jon7sky/hubitat-zg-ir01/main/drivers/zg-ir01-ir-blaster.groovy") {
@@ -144,7 +144,7 @@ metadata {
         // mains TS1201 above reports. Without this line it joins as a generic "Device"
         // and the driver has to be selected by hand. NOTE: this firmware does not echo
         // the hub-assigned sequence when sending -- see handleCodeDataRequest.
-        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,EF00,E004,ED00,0006,0402,0405,0001", outClusters: "0003", manufacturer: "_TZE200_33rdmvgw", model: "ZG-IR01", deviceJoinName: "Tuya ZG-IR01 Zigbee IR Blaster"
+        fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,EF00,E004,ED00,0006,0402,0405,0001", outClusters: "0003", manufacturer: "_TZE200_33rdmvgw", model: "ZG-IR01", deviceJoinName: "Tuya ZG-IR01 Zigbee IR Blaster (Battery)"
     }
 
     preferences {

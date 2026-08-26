@@ -1,5 +1,5 @@
 {
-  "packageName": "Tuya ZG-IR01 Zigbee IR Blaster",
+  "packageName": "Tuya ZG-IR01 Zigbee IR Blaster (Battery)",
   "author": "John Sevinsky",
   "version": "1.0.0",
   "minimumHEVersion": "2.3.0",
@@ -10,7 +10,7 @@
   "drivers": [
     {
       "id": "970f73e1-c000-4735-b563-eca5625fcaef",
-      "name": "Tuya ZG-IR01 Zigbee IR Blaster",
+      "name": "Tuya ZG-IR01 Zigbee IR Blaster (Battery)",
       "namespace": "jon7sky",
       "location": "https://raw.githubusercontent.com/jon7sky/hubitat-zg-ir01/main/drivers/zg-ir01-ir-blaster.groovy",
       "required": true,
