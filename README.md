@@ -1,5 +1,7 @@
 # Tuya ZG-IR01 Zigbee IR Blaster (Battery) — Hubitat driver
 
+<img src="images/zg-ir01.png" alt="Tuya ZG-IR01 battery-powered Zigbee IR blaster" width="170" align="right">
+
 Hubitat driver for the battery-powered Tuya Zigbee IR blaster that reports as
 manufacturer `_TZE200_33rdmvgw`, model `ZG-IR01`. These are sold unbranded on
 AliExpress under many names; the model string in Hubitat's device **Data**
