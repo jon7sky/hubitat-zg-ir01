@@ -1,12 +1,12 @@
 {
   "packageName": "Tuya ZG-IR01 Zigbee IR Blaster (Battery)",
   "author": "John Sevinsky",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minimumHEVersion": "2.3.0",
   "dateReleased": "2026-08-26",
   "documentationLink": "https://github.com/jon7sky/hubitat-zg-ir01/blob/main/README.md",
   "licenseFile": "https://raw.githubusercontent.com/jon7sky/hubitat-zg-ir01/main/LICENSE",
-  "releaseNotes": "0.1.1 - warn at learn time when a capture contains no IR signal (all timings saturated at 0xFFFF), instead of silently storing a code that transmits but does nothing.\n\n0.1.0 - pre-release. Fork of luckygerbils/hubitat-tuya-zigbee-ir adding support for the battery-powered ZG-IR01: fixes IR sending on firmware that does not echo the hub-assigned sequence number, adds a device fingerprint for auto-detection, and exposes temperature, humidity and battery.",
+  "releaseNotes": "0.1.2 - honour the PushableButton contract: set numberOfButtons (dashboards and app pickers need it to offer button numbers) and emit a pushed event from push().\n\n0.1.1 - warn at learn time when a capture contains no IR signal.\n\n0.1.0 - pre-release. Fork of luckygerbils/hubitat-tuya-zigbee-ir adding support for the battery-powered ZG-IR01.",
   "drivers": [
     {
       "id": "970f73e1-c000-4735-b563-eca5625fcaef",
@@ -14,7 +14,7 @@
       "namespace": "jon7sky",
       "location": "https://raw.githubusercontent.com/jon7sky/hubitat-zg-ir01/main/drivers/zg-ir01-ir-blaster.groovy",
       "required": true,
-      "version": "0.1.1"
+      "version": "0.1.2"
     }
   ]
 }

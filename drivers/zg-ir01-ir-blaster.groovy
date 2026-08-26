@@ -176,6 +176,7 @@ def pendingReceiveSeqs() { return PENDING_RECEIVE_SEQS.computeIfAbsent(device.id
 
 def installed() {
     info "installed()"
+    updateNumberOfButtons()
 }
 
 def updated() {
@@ -212,6 +213,7 @@ def refresh() {
     // deliberately ahead of the sensor-cluster check below so it still runs on a
     // device that has no sensors (the mains TS1201 has codes but no sensor clusters).
     listCodes()
+    updateNumberOfButtons()
 
     final List ALL_SENSORS = [
         [POWER_CLUSTER,       0x0021, "battery",     "0001"],
@@ -309,6 +311,29 @@ def mapButton(final BigDecimal button, final String codeName) {
     final Map mappedButtons = state.computeIfAbsent("mappedButtons", {k -> new HashMap()})
     mappedButtons[button.toString()] = codeName
     listCodes()
+    updateNumberOfButtons()
+}
+
+/**
+ * PushableButton requires a numberOfButtons attribute, and dashboard and app pickers
+ * use it to decide which button numbers to offer -- leaving it unset makes the device
+ * awkward or impossible to select in some of them.
+ *
+ * There is no physical button count here, so report the highest mapped number: map
+ * button 3 and the UI offers 1..3. Numbers below it that are unmapped simply warn
+ * when pushed, which is the same as before.
+ */
+def updateNumberOfButtons() {
+    final Map mapped = state.mappedButtons ?: [:]
+    int highest = 0
+    mapped.keySet().each { k ->
+        try {
+            final int n = Integer.parseInt(k.toString())
+            if (n > highest) { highest = n }
+        } catch (ignored) { /* non-numeric key, skip */ }
+    }
+    doSendEvent(name: "numberOfButtons", value: highest,
+                descriptionText: "${device} has ${highest} mapped button(s)".toString())
 }
 
 def unmapButton(final BigDecimal button) {
@@ -318,6 +343,7 @@ def unmapButton(final BigDecimal button) {
     }
     state.mappedButtons.remove(button.toString())
     listCodes()
+    updateNumberOfButtons()
 }
 
 /**
@@ -381,9 +407,15 @@ def push(final BigDecimal button) {
     final String codeName = state.mappedButtons[button.toString()]
     if (codeName == null) {
         warn "Unmapped button ${button}"
-    } else {
-        sendCode(codeName)
+        return
     }
+    sendCode(codeName)
+    // PushableButton contract: report the press. Emitted only once a mapped code is
+    // actually sent -- a push at an unmapped number did nothing, and saying otherwise
+    // would fire rules for an action that never happened. isStateChange because
+    // pressing the same button twice is two events, not one.
+    doSendEvent(name: "pushed", value: button.intValue(), isStateChange: true,
+                descriptionText: "${device} button ${button} pushed (${codeName})".toString())
 }
 
 /*********
