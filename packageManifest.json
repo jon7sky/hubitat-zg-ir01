@@ -1,0 +1,20 @@
+{
+  "packageName": "Tuya ZG-IR01 Zigbee IR Blaster",
+  "author": "John Sevinsky",
+  "version": "1.0.0",
+  "minimumHEVersion": "2.3.0",
+  "dateReleased": "2026-08-26",
+  "documentationLink": "https://github.com/jon7sky/hubitat-zg-ir01/blob/main/README.md",
+  "licenseFile": "https://raw.githubusercontent.com/jon7sky/hubitat-zg-ir01/main/LICENSE",
+  "releaseNotes": "Initial release. Fork of luckygerbils/hubitat-tuya-zigbee-ir adding support for the battery-powered ZG-IR01: fixes IR sending on firmware that does not echo the hub-assigned sequence number, adds a device fingerprint for auto-detection, and exposes temperature, humidity and battery.",
+  "drivers": [
+    {
+      "id": "970f73e1-c000-4735-b563-eca5625fcaef",
+      "name": "Tuya ZG-IR01 Zigbee IR Blaster",
+      "namespace": "jon7sky",
+      "location": "https://raw.githubusercontent.com/jon7sky/hubitat-zg-ir01/main/drivers/zg-ir01-ir-blaster.groovy",
+      "required": true,
+      "version": "1.0.0"
+    }
+  ]
+}
