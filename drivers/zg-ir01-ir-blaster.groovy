@@ -911,6 +911,7 @@ def handleDoneReceiving(final Map message) {
     final Map seqData = receiveBuffers().remove(message.seq)
     final String code = encodeBase64(seqData.buffer.toArray() as byte[])
     info "learned code: ${code}"
+    checkCapture(seqData.buffer)
 
     // Add a newline every 25 characters so it wraps on the Hubitat UI
     // Otherwise the code overflows the page, making it hard to copy
@@ -928,6 +929,56 @@ def handleDoneReceiving(final Map message) {
     sendLearn(false)
 }
 
+
+/**
+ * Warn when a freshly learned capture contains no actual IR signal.
+ *
+ * The blaster writes 0xFFFF -- the largest value a 16-bit timing field holds --
+ * whenever it waits for an edge and never sees one. A capture where every timing is
+ * that value means the remote was never detected: aimed away, out of range, pressed
+ * outside the learn window, or a flat remote battery. Such a code stores and later
+ * transmits perfectly happily, so without this check the failure does not surface
+ * until the target device fails to react, long after the cause is forgotten.
+ *
+ * Payload is Broadlink style: a 4-byte header (type, repeat count, uint16 LE
+ * length) then timing values, each either one byte or 0x00 followed by a
+ * big-endian uint16 for gaps too long to fit in a byte.
+ */
+def checkCapture(final List buffer) {
+    if (buffer == null || buffer.size() < 8) {
+        warn "Learned code is only ${buffer == null ? 0 : buffer.size()} bytes -- capture looks empty"
+        return
+    }
+
+    final List ticks = []
+    int i = 4
+    while (i < buffer.size()) {
+        final int b = ((buffer[i] as int) & 0xFF)
+        if (b == 0 && (i + 2) < buffer.size()) {
+            ticks.add(((((buffer[i + 1] as int) & 0xFF) << 8) | ((buffer[i + 2] as int) & 0xFF)))
+            i += 3
+        } else {
+            ticks.add(b)
+            i += 1
+        }
+    }
+
+    if (ticks.isEmpty()) {
+        warn "Learned code contains no timing data -- capture looks empty"
+        return
+    }
+
+    final int saturated = ticks.count { it == 0xFFFF }
+    final int distinct = new HashSet(ticks).size()
+
+    if (distinct <= 1 || saturated > (ticks.size() / 2)) {
+        warn "Capture looks EMPTY: ${saturated}/${ticks.size()} timings are 0xFFFF and only " +
+             "${distinct} distinct value(s). The remote was probably not detected -- aim it at " +
+             "the blaster from close range and press the button while the LED is lit, then learn again."
+    } else {
+        debug "Capture looks sane: ${ticks.size()} transitions, ${distinct} distinct values"
+    }
+}
 
 /*************
  * BASIC UTILS
