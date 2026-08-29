@@ -315,23 +315,28 @@ def sendCode(final String codeNameOrBase64CodeInput) {
 def addCode(final String codeName, final String base64Code) {
     info "addCode(${codeName})"
     final String clean = base64Code.replaceAll("\\s", "")
-    byte[] raw
-    try {
-        raw = clean.decodeBase64()
-    } catch (ex) {
-        error "addCode(${codeName}): not valid Base64"
-        return
-    }
-    if (raw == null || raw.length < 8) {
-        error "addCode(${codeName}): decodes to only ${raw == null ? 0 : raw.length} bytes"
-        return
-    }
-    if ((raw[0] & 0xFF) != 0x26) {
-        warn "addCode(${codeName}): leading byte is 0x${Integer.toHexString(raw[0] & 0xFF)}, expected 0x26 for an IR code -- storing anyway"
-    }
+
+    // Store FIRST, validate after. An earlier version decoded the Base64 before
+    // storing and returned on any failure -- so a decode the sandbox would not permit
+    // silently prevented the code being saved at all. Validation is advisory: it can
+    // warn about a suspect payload, but it must never be the reason a code is lost.
     final Map learnedCodes = state.computeIfAbsent("learnedCodes", {k -> new HashMap()})
     learnedCodes[codeName] = clean
-    info "addCode(${codeName}): stored ${clean.length()} chars, ${raw.length} bytes"
+    info "addCode(${codeName}): stored ${clean.length()} characters"
+
+    try {
+        final byte[] raw = decodeBase64(clean)
+        if (raw == null || raw.length < 8) {
+            warn "addCode(${codeName}): decodes to only ${raw == null ? 0 : raw.length} bytes -- suspiciously short"
+        } else if ((raw[0] & 0xFF) != 0x26) {
+            warn "addCode(${codeName}): leading byte is 0x${Integer.toHexString(raw[0] & 0xFF)}, expected 0x26 for an IR code"
+        } else {
+            info "addCode(${codeName}): ${raw.length} bytes, header looks like an IR code"
+        }
+    } catch (ex) {
+        debug "addCode(${codeName}): could not decode for validation (${ex}) -- stored regardless"
+    }
+
     listCodes()
 }
 
@@ -1237,6 +1242,18 @@ def encodeBase64(final byte[] bytes) {
     } catch (ex) {
         // Fallback for tests
         return encodeToString(bytes)
+    }
+}
+
+/**
+ * Counterpart to encodeBase64, with the same fallback reasoning: prefer the commons
+ * codec, fall back to the Groovy extension method if it is unavailable.
+ */
+def decodeBase64(final String s) {
+    try {
+        return org.apache.commons.codec.binary.Base64.decodeBase64(s)
+    } catch (ex) {
+        return s.decodeBase64()
     }
 }
 
