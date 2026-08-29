@@ -120,6 +120,10 @@ metadata {
         command "sendCode", [
             [name: "Code*", type: "STRING", description: "Name of learned code or raw Base64 bytes of code to send"]
         ]
+        command "addCode", [
+            [name: "Code Name*", type: "STRING", description: "Name to store this code under"],
+            [name: "Base64 Code*", type: "STRING", description: "Raw Base64 IR code (Broadlink format)"]
+        ]
         command "forgetCode", [
             [name: "Code Name*", type: "STRING", description: "Name of learned code to forget"]
         ]
@@ -295,6 +299,40 @@ def sendCode(final String codeNameOrBase64CodeInput) {
         created: nowMs
     ]
     sendStartTransmit(seq, jsonToSend.bytes.length)
+}
+
+/**
+ * Store a code under a name without learning it from a remote.
+ *
+ * Needed for protocols the blaster cannot capture, and for codes generated from a
+ * protocol specification rather than recorded -- an air conditioner has one frame per
+ * combination of settings, so producing them beats learning dozens by hand.
+ *
+ * The payload is Broadlink format: 0x26, repeat count, uint16 LE length, then timing
+ * values. Only the leading byte is checked; a wrong code is the caller's problem, but
+ * pasting something that is not an IR code at all is worth catching here.
+ */
+def addCode(final String codeName, final String base64Code) {
+    info "addCode(${codeName})"
+    final String clean = base64Code.replaceAll("\\s", "")
+    byte[] raw
+    try {
+        raw = clean.decodeBase64()
+    } catch (ex) {
+        error "addCode(${codeName}): not valid Base64"
+        return
+    }
+    if (raw == null || raw.length < 8) {
+        error "addCode(${codeName}): decodes to only ${raw == null ? 0 : raw.length} bytes"
+        return
+    }
+    if ((raw[0] & 0xFF) != 0x26) {
+        warn "addCode(${codeName}): leading byte is 0x${Integer.toHexString(raw[0] & 0xFF)}, expected 0x26 for an IR code -- storing anyway"
+    }
+    final Map learnedCodes = state.computeIfAbsent("learnedCodes", {k -> new HashMap()})
+    learnedCodes[codeName] = clean
+    info "addCode(${codeName}): stored ${clean.length()} chars, ${raw.length} bytes"
+    listCodes()
 }
 
 def forgetCode(final String codeName) {
