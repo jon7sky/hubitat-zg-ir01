@@ -127,6 +127,7 @@ metadata {
         command "forgetCode", [
             [name: "Code Name*", type: "STRING", description: "Name of learned code to forget"]
         ]
+        command "forgetAllCodes"
         command "mapButton", [
             [name: "Button*", type: "NUMBER", description: "Button number to map"],
             [name: "Code Name*", type: "STRING", description: "Name of learned code to map to the given button"]
@@ -355,6 +356,27 @@ def forgetCode(final String codeName) {
     }
     state.learnedCodes.remove(codeName)
     listCodes()
+}
+
+/**
+ * Remove every learned code, and the button mappings with them.
+ *
+ * The mappings go too because they hold names, not codes: a mapping left pointing at
+ * a deleted name would send that name to sendCode, which falls back to treating an
+ * unknown name as raw Base64 and would put nonsense on the wire. Clearing both keeps
+ * push() honest.
+ *
+ * There is no confirmation step -- Hubitat commands fire immediately -- so this logs
+ * at warn level with the counts it destroyed.
+ */
+def forgetAllCodes() {
+    final int codes = (state.learnedCodes ?: [:]).size()
+    final int maps  = (state.mappedButtons ?: [:]).size()
+    state.remove("learnedCodes")
+    state.remove("mappedButtons")
+    warn "forgetAllCodes: removed ${codes} code(s) and ${maps} button mapping(s)"
+    listCodes()
+    updateNumberOfButtons()
 }
 
 def mapButton(final BigDecimal button, final String codeName) {
