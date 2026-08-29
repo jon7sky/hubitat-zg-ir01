@@ -1,0 +1,1 @@
+{"id":1111,"version":3,"name":"Tuya ZG-IR01 Zigbee IR Blaster (Battery)","status":"success"}

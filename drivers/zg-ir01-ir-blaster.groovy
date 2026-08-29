@@ -139,6 +139,10 @@ metadata {
         // Readable index of state.learnedCodes. Refreshed automatically whenever the
         // set of codes or button mappings changes, so it never goes stale.
         attribute "codeList", "STRING"
+        // Outcome of the most recent sendCode. Exists because the Zigbee transfer is
+        // only visible in the live log, which cannot be read back later or remotely --
+        // if a send stalls, this attribute is left reading "sending ..." and says so.
+        attribute "lastSendStatus", "STRING"
         
         // Note, my case says ZS06, but this is what Device Get Info tells me the fingerprint is
         fingerprint profileId: "0104", inClusters: "0000,0004,0005,0003,ED00,E004,0006", outClusters: "0019,000A", manufacturer: "_TZ3290_7v1k4vufotpowp9z", model: "TS1201", deviceJoinName: "Tuya Zigbee IR Remote Control"
@@ -296,8 +300,12 @@ def sendCode(final String codeNameOrBase64CodeInput) {
     def seq = nextSeq()
     sendBuffers()[seq] = [
         buffer: jsonToSend.bytes as List,
-        created: nowMs
+        created: nowMs,
+        codeName: codeNameOrBase64CodeInput,
+        chunks: 0
     ]
+    doSendEvent(name: "lastSendStatus",
+                value: "sending ${codeNameOrBase64CodeInput} (${jsonToSend.bytes.length} bytes, seq ${seq})".toString())
     sendStartTransmit(seq, jsonToSend.bytes.length)
 }
 
@@ -817,6 +825,7 @@ def handleCodeDataRequest(final Map message) {
             warn "Device requested seq ${message.seq}, falling back to in-flight seq ${best.key} (further chunks silent)"
         }
     }
+    seqData.chunks = (seqData.chunks ?: 0) + 1
     final List<Byte> buffer = seqData.buffer
     // Apparently 55 bytes at a time. TODO: experiment, should this be maxlen bytes?
     final byte[] part = buffer.subList(position, Math.min(position + 55, buffer.size())) as byte[]
@@ -937,6 +946,10 @@ Map parseDoneSending(final List<String> payload) {
 
 def handleDoneSending(final Map message) {
     info "code fully sent"
+    final Map finished = sendBuffers()[message.seq] ?:
+        (sendBuffers().isEmpty() ? null : sendBuffers().entrySet().max { it.value.created ?: 0 }.value)
+    doSendEvent(name: "lastSendStatus",
+                value: "sent ${finished?.codeName} (${finished?.buffer?.size()} bytes in ${finished?.chunks} chunks)".toString())
     // Same seq caveat as handleCodeDataRequest: if the device finished with a seq we
     // never issued, drop the single in-flight buffer instead. Without this the buffer
     // leaks and the NEXT send sees two entries, which defeats the fallback above.
